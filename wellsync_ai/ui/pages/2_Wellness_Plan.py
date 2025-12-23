@@ -104,19 +104,18 @@ if st.button("🚀 Generate My Wellness Plan", type="primary", use_container_wid
         }
         
         response = requests.post("http://localhost:5000/wellness-plan", json=payload, timeout=120)
-        progress.progress(1.0)
-        status.empty()
         
         if response.status_code == 200:
             data = response.json()
             st.session_state['wellness_plan'] = data
             st.balloons()
-            st.success("✨ Plan Generated Successfully!")
+            # Success message is already shown by status updates
         else:
             st.error(f"Error: {response.text}")
             st.stop()
             
     except Exception as e:
+        status.update(label="❌ Generation Failed", state="error", expanded=True)
         st.error(f"Connection failed: {str(e)}")
         st.stop()
 
@@ -138,7 +137,7 @@ if 'wellness_plan' in st.session_state:
     # 1. Dashboard Metrics
     render_dashboard(plan, unified, fitness, nutrition, sleep, mental)
 
-    # 2. Executive Summary
+    # 2. Executive Summary & Agent Reports
     reasoning = plan.get('reasoning', '')
     if len(reasoning) < 50:
         f_focus = fitness.get('focus', 'general wellness').replace('_', ' ')
@@ -184,6 +183,11 @@ if 'wellness_plan' in st.session_state:
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+    # 3. DETAILED AGENT REPORTS
+    st.markdown("---")
+    render_agent_reports(plan)
+    st.markdown("---")
 
     # === DOMAIN TABS ===
     st.markdown("### 🎯 Your Personalized Plan")

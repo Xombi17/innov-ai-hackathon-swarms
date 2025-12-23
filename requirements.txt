@@ -40,3 +40,5 @@ structlog>=23.0.0
 
 # UI Framework
 streamlit>=1.30.0
+graphviz>=0.20.1
+plotly>=5.18.0

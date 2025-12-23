@@ -25,8 +25,9 @@ def apply_custom_styles():
             font-family: 'Inter', sans-serif;
         }
         
-        /* Hide Streamlit branding */
-        #MainMenu, footer, header {visibility: hidden;}
+        /* Hide Streamlit branding but keep menu accessible */
+        footer {visibility: hidden;}
+        header {visibility: visible;}
         
         /* Dashboard Card */
         .dashboard-card {
