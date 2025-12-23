@@ -7,6 +7,7 @@ from wellsync_ai.ui.components.dashboard import render_dashboard
 from wellsync_ai.ui.components.fitness_tab import render_fitness_tab
 from wellsync_ai.ui.components.nutrition_tab import render_nutrition_tab
 from wellsync_ai.ui.components.agent_lab_tab import render_agent_lab
+from wellsync_ai.ui.components.agent_reports import render_agent_reports
 
 st.set_page_config(page_title="Wellness Plan", page_icon="🧬", layout="wide")
 apply_custom_styles()

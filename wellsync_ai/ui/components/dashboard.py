@@ -1,6 +1,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 import numpy as np
+import textwrap
 
 def render_dashboard(plan, unified, fitness, nutrition, sleep, mental):
     """
@@ -75,7 +76,7 @@ def render_dashboard(plan, unified, fitness, nutrition, sleep, mental):
             fill='toself',
             name='Current Plan',
             line_color=color,
-            fillcolor=f"{color}40" # 40% opacity hex
+            fillcolor=f"rgba({int(color[1:3], 16)}, {int(color[3:5], 16)}, {int(color[5:7], 16)}, 0.4)", # 40% opacity rgba
         ))
         
         # Ideal reference
@@ -111,7 +112,7 @@ def render_dashboard(plan, unified, fitness, nutrition, sleep, mental):
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
     with col_metrics:
-        st.markdown(f"""
+        st.markdown(textwrap.dedent(f"""
         <div style="background: linear-gradient(145deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8)); border-radius: 16px; padding: 1.5rem; text-align: center; border: 1px solid {color}40; height: 100%; display: flex; flex-direction: column; justify-content: center;">
             <div style="font-size: 0.9rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">Daily Health Score</div>
             <div style="font-size: 3.5rem; font-weight: 800; color: {color}; text-shadow: 0 0 20px {color}60;">{readiness_score}</div>
@@ -128,7 +129,7 @@ def render_dashboard(plan, unified, fitness, nutrition, sleep, mental):
                 </div>
             </div>
         </div>
-        """, unsafe_allow_html=True)
+        """), unsafe_allow_html=True)
 
     # --- 3. DETAILED ANALYSIS (THE WHY) ---
     with st.expander("🔍 Deep Dive Analysis (Agent Reasoning)", expanded=True):
