@@ -1,0 +1,8 @@
+swarms
+streamlit
+pandas
+pydantic
+openai
+python-dotenv
+tenacity
+loguru

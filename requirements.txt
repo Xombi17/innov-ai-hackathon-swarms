@@ -1,0 +1,40 @@
+# Core Dependencies
+swarms>=5.0.0
+flask>=2.3.0
+redis>=4.5.0
+sqlalchemy>=2.0.0
+
+# LLM and AI Dependencies
+openai>=1.0.0
+anthropic>=0.7.0
+
+# Data Processing
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Async Support
+asyncio-mqtt>=0.13.0
+aioredis>=2.0.0
+
+# Configuration and Environment
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+
+# Testing Dependencies
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+hypothesis>=6.0.0
+
+# Development Dependencies
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.0.0
+
+# Web Framework Extensions
+flask-cors>=4.0.0
+gunicorn>=21.0.0
+
+# Monitoring and Logging
+structlog>=23.0.0
+prometheus-client>=0.17.0
