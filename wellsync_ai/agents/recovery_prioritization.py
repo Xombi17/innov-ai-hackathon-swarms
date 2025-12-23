@@ -35,6 +35,17 @@ class EnergyBalance:
     stress_load: float  # 0-100 scale
     sustainability_score: float  # 0-100 scale
     balance_status: str  # "deficit", "balanced", "surplus"
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to JSON-serializable dictionary."""
+        return {
+            'energy_demand': self.energy_demand,
+            'energy_availability': self.energy_availability,
+            'recovery_capacity': self.recovery_capacity,
+            'stress_load': self.stress_load,
+            'sustainability_score': self.sustainability_score,
+            'balance_status': self.balance_status
+        }
 
 
 @dataclass
@@ -46,6 +57,17 @@ class RecoveryPriority:
     trade_offs: List[str]
     timeline: str  # "immediate", "short_term", "medium_term"
     confidence: float
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to JSON-serializable dictionary."""
+        return {
+            'priority_level': self.priority_level,
+            'affected_domains': self.affected_domains,
+            'interventions': self.interventions,
+            'trade_offs': self.trade_offs,
+            'timeline': self.timeline,
+            'confidence': self.confidence
+        }
 
 
 class RecoveryPrioritizationEngine:

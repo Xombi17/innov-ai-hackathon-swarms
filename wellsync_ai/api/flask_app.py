@@ -579,15 +579,80 @@ def create_flask_app() -> Flask:
                 request_id=g.request_id
             )
             
-            # This will be implemented when agents are integrated
-            # For now, return placeholder status
-            agents_status = {
-                'FitnessAgent': {'status': 'not_implemented', 'health': 'unknown'},
-                'NutritionAgent': {'status': 'not_implemented', 'health': 'unknown'},
-                'SleepAgent': {'status': 'not_implemented', 'health': 'unknown'},
-                'MentalWellnessAgent': {'status': 'not_implemented', 'health': 'unknown'},
-                'CoordinatorAgent': {'status': 'not_implemented', 'health': 'unknown'}
+            # Import agents and get real status
+            from wellsync_ai.agents.fitness_agent import FitnessAgent
+            from wellsync_ai.agents.nutrition_agent import NutritionAgent
+            from wellsync_ai.agents.sleep_agent import SleepAgent
+            from wellsync_ai.agents.mental_wellness_agent import MentalWellnessAgent
+            from wellsync_ai.agents.coordinator_agent import CoordinatorAgent
+            
+            agents_status = {}
+            healthy_count = 0
+            
+            # Check each agent type
+            agent_classes = {
+                'FitnessAgent': FitnessAgent,
+                'NutritionAgent': NutritionAgent,
+                'SleepAgent': SleepAgent,
+                'MentalWellnessAgent': MentalWellnessAgent,
+                'CoordinatorAgent': CoordinatorAgent
             }
+            
+            for name, agent_class in agent_classes.items():
+                try:
+                    # Agents are healthy if they can be instantiated
+                    agent = agent_class()
+                    status_info = agent.get_agent_status()
+                    agents_status[name] = {
+                        'status': 'active',
+                        'health': 'healthy',
+                        'domain': status_info.get('domain', 'unknown'),
+                        'confidence_threshold': status_info.get('confidence_threshold', 0.7)
+                    }
+                    healthy_count += 1
+                except Exception as e:
+                    agents_status[name] = {
+                        'status': 'error',
+                        'health': 'unhealthy',
+                        'error': str(e)
+                    }
+            
+            # Add nutrition swarm agents
+            try:
+                from wellsync_ai.agents.nutrition_swarm import (
+                    NutritionManager,
+                    ConstraintBudgetAnalyst,
+                    AvailabilityMapper,
+                    PreferenceFatigueModeler,
+                    RecoveryTimingAdvisor
+                )
+                
+                swarm_agents = {
+                    'NutritionManager': NutritionManager,
+                    'ConstraintBudgetAnalyst': ConstraintBudgetAnalyst,
+                    'AvailabilityMapper': AvailabilityMapper,
+                    'PreferenceFatigueModeler': PreferenceFatigueModeler,
+                    'RecoveryTimingAdvisor': RecoveryTimingAdvisor
+                }
+                
+                for name, agent_class in swarm_agents.items():
+                    try:
+                        agent = agent_class()
+                        agents_status[name] = {
+                            'status': 'active',
+                            'health': 'healthy',
+                            'type': 'nutrition_swarm',
+                            'role': 'manager' if name == 'NutritionManager' else 'worker'
+                        }
+                        healthy_count += 1
+                    except Exception as e:
+                        agents_status[name] = {
+                            'status': 'error',
+                            'health': 'unhealthy',
+                            'error': str(e)
+                        }
+            except ImportError:
+                pass  # Swarm not yet fully integrated
             
             response_data = {
                 'success': True,
@@ -595,8 +660,8 @@ def create_flask_app() -> Flask:
                 'request_id': g.request_id,
                 'agents': agents_status,
                 'total_agents': len(agents_status),
-                'healthy_agents': 0,
-                'message': 'Agent integration will be completed in subsequent tasks'
+                'healthy_agents': healthy_count,
+                'swarm_architecture': 'hierarchical'
             }
             
             return jsonify(response_data), 200
@@ -612,6 +677,177 @@ def create_flask_app() -> Flask:
                 f"Failed to get agents status: {str(e)}",
                 status_code=500,
                 error_code="GET_AGENTS_STATUS_FAILED"
+            )
+    
+    @app.route('/nutrition/state/<user_id>', methods=['GET'])
+    def get_nutrition_state(user_id: str):
+        """
+        Get current nutrition state for a user.
+        
+        Returns budget, availability, history, and targets.
+        """
+        try:
+            logger.info(
+                "Nutrition state requested",
+                request_id=g.request_id,
+                user_id=user_id
+            )
+            
+            from wellsync_ai.data.nutrition_state import get_nutrition_state as get_state
+            
+            state = get_state(user_id)
+            context = state.get_decision_context()
+            
+            response_data = {
+                'success': True,
+                'timestamp': datetime.now().isoformat(),
+                'request_id': g.request_id,
+                'user_id': user_id,
+                'state': state.to_dict(),
+                'decision_context': context
+            }
+            
+            return jsonify(response_data), 200
+            
+        except Exception as e:
+            logger.error(
+                "Get nutrition state failed",
+                request_id=g.request_id,
+                user_id=user_id,
+                error=str(e)
+            )
+            
+            raise WellnessAPIError(
+                f"Failed to get nutrition state: {str(e)}",
+                status_code=500,
+                error_code="GET_NUTRITION_STATE_FAILED"
+            )
+    
+    @app.route('/nutrition/decision', methods=['POST'])
+    @validate_json_request(required_fields=['user_profile'])
+    def trigger_nutrition_decision(request_data: Dict[str, Any]):
+        """
+        Trigger a nutrition decision using the hierarchical swarm.
+        
+        Runs the full decision loop with all worker agents.
+        """
+        try:
+            logger.info(
+                "Nutrition decision requested",
+                request_id=g.request_id,
+                user_id=request_data.get('user_profile', {}).get('user_id')
+            )
+            
+            from wellsync_ai.agents.nutrition_swarm import NutritionManager
+            import asyncio
+            
+            user_profile = request_data['user_profile']
+            constraints = request_data.get('constraints', {})
+            shared_state = request_data.get('shared_state', {})
+            
+            # Run hierarchical decision
+            manager = NutritionManager()
+            
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            
+            result = loop.run_until_complete(
+                manager.run_hierarchical_decision(user_profile, constraints, shared_state)
+            )
+            
+            response_data = {
+                'success': True,
+                'timestamp': datetime.now().isoformat(),
+                'request_id': g.request_id,
+                'decision': result
+            }
+            
+            return jsonify(response_data), 200
+            
+        except Exception as e:
+            logger.error(
+                "Nutrition decision failed",
+                request_id=g.request_id,
+                error=str(e),
+                traceback=traceback.format_exc()
+            )
+            
+            raise WellnessAPIError(
+                f"Nutrition decision failed: {str(e)}",
+                status_code=500,
+                error_code="NUTRITION_DECISION_FAILED"
+            )
+    
+    @app.route('/nutrition/feedback', methods=['POST'])
+    @validate_json_request(required_fields=['user_id', 'feedback'])
+    def submit_nutrition_feedback(request_data: Dict[str, Any]):
+        """
+        Submit nutrition feedback (preferences, rejections).
+        
+        Updates user preference state for future decisions.
+        """
+        try:
+            logger.info(
+                "Nutrition feedback submitted",
+                request_id=g.request_id,
+                user_id=request_data.get('user_id')
+            )
+            
+            from wellsync_ai.data.nutrition_state import get_nutrition_state
+            
+            user_id = request_data['user_id']
+            feedback = request_data['feedback']
+            
+            state = get_nutrition_state(user_id)
+            
+            # Process feedback
+            if 'rejected_items' in feedback:
+                for item in feedback['rejected_items']:
+                    state.history.add_rejection(
+                        item.get('name', item),
+                        item.get('reason', '')
+                    )
+            
+            if 'meal_consumed' in feedback:
+                state.history.add_meal(feedback['meal_consumed'])
+            
+            if 'expense' in feedback:
+                state.budget.add_expense(
+                    feedback['expense'].get('amount', 0),
+                    feedback['expense'].get('description', '')
+                )
+            
+            # Recalculate fatigue
+            state.history.calculate_fatigue()
+            
+            # Save updated state
+            state.save()
+            
+            response_data = {
+                'success': True,
+                'timestamp': datetime.now().isoformat(),
+                'request_id': g.request_id,
+                'user_id': user_id,
+                'message': 'Nutrition feedback processed successfully',
+                'updated_context': state.get_decision_context()
+            }
+            
+            return jsonify(response_data), 200
+            
+        except Exception as e:
+            logger.error(
+                "Submit nutrition feedback failed",
+                request_id=g.request_id,
+                error=str(e)
+            )
+            
+            raise WellnessAPIError(
+                f"Failed to submit nutrition feedback: {str(e)}",
+                status_code=500,
+                error_code="SUBMIT_NUTRITION_FEEDBACK_FAILED"
             )
     
     return app
