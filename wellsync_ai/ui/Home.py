@@ -18,33 +18,85 @@ st.set_page_config(
 # Custom CSS for Modern UI
 st.markdown("""
 <style>
-    .main {
-        background-color: #f8fafc;
-    }
-    .stCard {
-        background-color: white;
-        padding: 2rem;
-        border-radius: 1rem;
-        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    }
-    .metric-card {
-        background-color: white;
-        padding: 1.5rem;
-        border-radius: 0.75rem;
-        border: 1px solid #e2e8f0;
-        text-align: center;
-    }
-    h1, h2, h3 {
-        color: #1e293b;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    
+    html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
     }
-    .status-ok {
-        color: #22c55e;
-        font-weight: bold;
+    
+    .main {
+        background-color: #f8fafc;
+        background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+        background-size: 20px 20px;
     }
+    
+    .stCard {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        padding: 2rem;
+        border-radius: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+        transition: transform 0.2s ease-in-out;
+    }
+    
+    .stCard:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    .metric-card {
+        background: linear-gradient(145deg, #ffffff, #f1f5f9);
+        padding: 1.5rem;
+        border-radius: 1rem;
+        border: 1px solid #e2e8f0;
+        text-align: center;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        border-color: #cbd5e1;
+    }
+    
+    h1 {
+        background: linear-gradient(to right, #2563eb, #7c3aed);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+    }
+    
+    h2, h3 {
+        color: #0f172a;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+    }
+    
+    .status-ok {
+        color: #10b981;
+        font-weight: 700;
+        background: #ecfdf5;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        display: inline-block;
+    }
+    
     .status-err {
         color: #ef4444;
-        font-weight: bold;
+        font-weight: 700;
+        background: #fef2f2;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        display: inline-block;
+    }
+    
+    /* Custom Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #ffffff;
+        border-right: 1px solid #e2e8f0;
     }
 </style>
 """, unsafe_allow_html=True)

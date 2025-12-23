@@ -144,7 +144,7 @@ class WellnessAgent(Agent, ABC):
             system_prompt=system_prompt,
             llm=model,
             max_loops=1,
-            autosave=True,
+            autosave=False,
             dashboard=False,
             verbose=True,
             dynamic_temperature_enabled=True,
@@ -311,12 +311,16 @@ class WellnessAgent(Agent, ABC):
             
         except json.JSONDecodeError as e:
             # Return fallback structure for invalid JSON
+            import structlog
+            logger = structlog.get_logger()
+            logger.error(f"Agent {self.agent_name} JSON parse failed", raw_response=response, error=str(e))
+            
             return {
                 'agent_name': self.agent_name,
                 'domain': self.domain,
                 'error': f"JSON parsing failed: {str(e)}",
                 'confidence': 0.0,
-                'proposal': response,
+                'proposal': {}, # Return empty dict to prevent AttributeError
                 'timestamp': datetime.now().isoformat(),
                 'reasoning': 'Failed to parse structured response'
             }

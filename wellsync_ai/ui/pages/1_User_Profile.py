@@ -17,7 +17,11 @@ if "user_profile" not in st.session_state:
         "height": 175,
         "activity_level": "moderate",
         "goals": ["muscle_gain", "better_sleep"],
-        "dietary_restrictions": []
+        "dietary_restrictions": [],
+        "constraints": {
+            "daily_budget": 30,
+            "workout_minutes": 60
+        }
     }
 
 with st.form("profile_form"):

@@ -25,13 +25,13 @@ class WellSyncConfig(BaseSettings):
     groq_api_key: Optional[str] = Field(None, env="GROQ_API_KEY")
     
     # LLM Configuration
-    llm_provider: str = Field("gemini", env="LLM_PROVIDER")  # openai, gemini, groq
-    llm_model: str = Field("gemini/gemini-1.5-flash", env="LLM_MODEL") 
+    llm_provider: str = Field("gemini", env="LLM_PROVIDER")
+    llm_model: str = Field("gemini/gemini-3.0-flash", env="LLM_MODEL") 
     
-    # Provider-specific settings (auto-selected based on llm_provider)
-    # Gemini: gemini/gemini-1.5-flash, gemini/gemini-pro
-    # Groq: groq/llama3-8b-8192, groq/llama3-70b-8192
-    # OpenAI: gpt-4, gpt-3.5-turbo
+    # Recommended Model Options (2025):
+    # - Gemini: gemini/gemini-3.0-flash (Fastest), gemini/gemini-3.0-pro (Reasoning)
+    # - Groq: groq/llama-3-70b-8192 (Open Source alternative)
+    # - OpenAI: gpt-4o (High precision)
     
     # Database Configuration
     database_url: str = Field("sqlite:///data/databases/wellsync.db", env="DATABASE_URL")

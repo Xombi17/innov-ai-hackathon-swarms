@@ -196,12 +196,15 @@ CRITICAL RULES:
         conflicts_detected = self._detect_conflicts(agent_proposals, constraints)
         constraint_analysis = self._analyze_constraints(agent_proposals, constraints)
         
+        # Summarize proposals to fit within context limits
+        summarized_proposals = self._summarize_proposals(agent_proposals)
+        
         # Build comprehensive coordination prompt
         prompt = f"""
 COORDINATION REQUEST
 
 AGENT PROPOSALS TO COORDINATE:
-{json.dumps(agent_proposals, indent=2)}
+{json.dumps(summarized_proposals, indent=2)}
 
 USER CONSTRAINTS:
 {json.dumps(constraints, indent=2)}
@@ -231,6 +234,23 @@ Explain your reasoning for conflict resolution strategies and trade-off decision
 """
         
         return prompt
+
+    def _summarize_proposals(self, agent_proposals: Dict[str, Any]) -> Dict[str, Any]:
+        """Summarize agent proposals to reduce token usage."""
+        summary = {}
+        for agent, data in agent_proposals.items():
+            if not isinstance(data, dict):
+                summary[agent] = str(data)[:200]
+                continue
+                
+            # Keep core domain output and metrics, drop verbose reasoning/metadata
+            agent_summary = {}
+            for key, value in data.items():
+                if key in ['reasoning', 'timestamp', 'session_id', 'agent_name', 'domain']:
+                    continue
+                agent_summary[key] = value
+            summary[agent] = agent_summary
+        return summary
     
     def coordinate_agent_proposals(
         self,

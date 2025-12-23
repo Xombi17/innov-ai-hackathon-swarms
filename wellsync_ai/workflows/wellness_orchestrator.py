@@ -57,9 +57,9 @@ class WellnessWorkflowOrchestrator:
         user_profile = state_data.get('user_profile', {})
         constraints = state_data.get('constraints', {})
         
-        # 2. Phase 1: Parallel Agent Analysis
-        # We run all domain agents in parallel
-        agent_proposals = await self._run_parallel_agents(user_profile, constraints, state_data)
+        # 2. Phase 1: Sequential Agent Analysis
+        # We run domain agents sequentially to avoid rate limits
+        agent_proposals = await self._run_agents(user_profile, constraints, state_data)
         
         # Update state with proposals
         shared_state.update_recent_data('agent_proposals', agent_proposals)
@@ -91,43 +91,46 @@ class WellnessWorkflowOrchestrator:
         logger.info("Wellness workflow execution completed", state_id=state_id)
         return final_response
 
-    async def _run_parallel_agents(
+    async def _run_agents(
         self, 
         user_profile: Dict[str, Any], 
         constraints: Dict[str, Any],
         shared_state_data: Dict[str, Any]
     ) -> Dict[str, Dict[str, Any]]:
-        """Run all domain agents in parallel."""
+        """Run all domain agents sequentially to avoid rate limits."""
         
-        tasks = []
-        agent_names = []
+        proposals = {}
         
         for name, agent in self.agents.items():
-            agent_names.append(name)
-            # Assuming process_wellness_request is sync, we wrap it
-            # If it's async, we just await it. base_agent.py shows it as sync.
-            # We use asyncio.to_thread to run sync code in async loop
-            tasks.append(
-                asyncio.to_thread(
+            try:
+                # specific delay to respect rate limits (Groq free tier TPM)
+                await asyncio.sleep(5) 
+                
+                logger.info(f"Running agent: {name}")
+                
+                # Run agent in thread
+                result = await asyncio.to_thread(
                     agent.process_wellness_request,
                     user_profile,
                     constraints,
                     shared_state_data
                 )
-            )
-        
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        
-        proposals = {}
-        for name, result in zip(agent_names, results):
-            if isinstance(result, Exception):
-                logger.error(f"Agent {name} failed", error=str(result))
-                proposals[name] = {
-                    'error': str(result),
-                    'confidence': 0.0,
-                    'reasoning': 'Agent execution failed'
-                }
-            else:
+                
                 proposals[name] = result
+                
+            except Exception as e:
+                error_msg = str(e)
+                if hasattr(e, 'response') and hasattr(e.response, 'text'):
+                     error_msg += f" Response: {e.response.text}"
+                
+                logger.error(f"Agent {name} failed", error=error_msg)
+                
+                proposals[name] = {
+                    'agent_name': name,
+                    'error': error_msg,
+                    'confidence': 0.0,
+                    'reasoning': 'Agent execution failed',
+                    'proposal': {} # Valid empty structure
+                }
                 
         return proposals

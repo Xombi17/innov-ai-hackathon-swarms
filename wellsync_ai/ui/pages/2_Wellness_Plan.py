@@ -14,7 +14,7 @@ if "user_profile" not in st.session_state or not st.session_state.user_profile.g
 
 # Display User Context
 user = st.session_state.user_profile
-st.info(f"**Generating Plan for:** {user['name']} | **Goal:** {', '.join(user['goals'])} | **Budget:** ${user['constraints']['daily_budget']}/day")
+st.info(f"**Generating Plan for:** {user['name']} | **Goal:** {', '.join(user['goals'])} | **Budget:** ${user.get('constraints', {}).get('daily_budget', 30)}/day")
 
 # Action Button
 if st.button("🚀 Activate Agents & Generate Plan", type="primary"):
@@ -83,7 +83,13 @@ if st.button("🚀 Activate Agents & Generate Plan", type="primary"):
             
             # Summary Section
             st.markdown("### 📅 Your Daily Plan")
-            st.markdown(plan_data["wellness_plan"]["plan_content"])
+            
+            # Safe access to plan content
+            plan_content = plan_data.get("plan", {}).get("plan_content", "No plan content generated.")
+            if isinstance(plan_content, dict):
+                 plan_content = str(plan_content) # Fallback if content is dict
+            
+            st.markdown(plan_content)
             
             # Agent Insights (Collapsible)
             with st.expander("🔍 Inspect Agent Logic (Debug View)"):
