@@ -89,48 +89,100 @@ class WellnessWorkflowOrchestrator:
         shared_state.update_recent_data('unified_plan', unified_plan)
         
         logger.info("Wellness workflow execution completed", state_id=state_id)
-        return final_response
-
     async def _run_agents(
         self, 
         user_profile: Dict[str, Any], 
         constraints: Dict[str, Any],
         shared_state_data: Dict[str, Any]
     ) -> Dict[str, Dict[str, Any]]:
-        """Run all domain agents sequentially to avoid rate limits."""
+        """Run all domain agents sequentially with Caching."""
         
+        from wellsync_ai.utils.cache_manager import get_cache_manager
+        cache_manager = get_cache_manager()
         proposals = {}
         
+        # Prepare tasks for parallel execution
+        tasks = []
+        agent_names = []
+        
         for name, agent in self.agents.items():
-            try:
-                # specific delay to respect rate limits (Groq free tier TPM)
-                await asyncio.sleep(5) 
+            # Generate cache key
+            cache_data = {
+                'agent': name,
+                'user_id': user_profile.get('user_id'),
+                'profile_age': user_profile.get('age'),
+                'constraints': constraints,
+                'domain': agent.domain
+            }
+            cache_key = cache_manager.generate_key(f"agent_proposal:{name}", cache_data)
+            
+            # Check cache
+            cached_result = cache_manager.get(cache_key)
+            if cached_result:
+                logger.info(f"Cache HIT for agent: {name}")
+                proposals[name] = cached_result
+                continue
                 
-                logger.info(f"Running agent: {name}")
-                
-                # Run agent in thread
-                result = await asyncio.to_thread(
-                    agent.process_wellness_request,
-                    user_profile,
-                    constraints,
-                    shared_state_data
-                )
-                
-                proposals[name] = result
-                
-            except Exception as e:
-                error_msg = str(e)
-                if hasattr(e, 'response') and hasattr(e.response, 'text'):
-                     error_msg += f" Response: {e.response.text}"
-                
-                logger.error(f"Agent {name} failed", error=error_msg)
-                
-                proposals[name] = {
-                    'agent_name': name,
-                    'error': error_msg,
-                    'confidence': 0.0,
-                    'reasoning': 'Agent execution failed',
-                    'proposal': {} # Valid empty structure
-                }
+            logger.info(f"Cache MISS for agent: {name}. Queueing for execution...")
+            tasks.append(self._execute_single_agent(name, agent, user_profile, constraints, shared_state_data, cache_manager, cache_key))
+            agent_names.append(name)
+
+        if tasks:
+            logger.info(f"Executing {len(tasks)} agents in parallel...")
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            for name, result in zip(agent_names, results):
+                if isinstance(result, Exception):
+                    logger.error(f"Agent {name} crashed unrecoverably", error=str(result))
+                    # Fallback for catastrophic failure
+                    proposals[name] = {
+                        'agent_name': name,
+                        'is_error': True,
+                        'error': str(result),
+                        'confidence': 0.0,
+                        'proposal': {}
+                    }
+                else:
+                    proposals[name] = result
+                    
+        return proposals
+
+    async def _execute_single_agent(self, name, agent, user_profile, constraints, shared_state_data, cache_manager, cache_key):
+        """Helper to run a single agent with error handling and caching."""
+        try:
+            # Random jitter to avoid exact simultaneous requests if uncached
+            import random
+            await asyncio.sleep(random.uniform(0.1, 2.0))
+            
+            logger.info(f"Running agent: {name}")
+            
+            result = await asyncio.to_thread(
+                agent.process_wellness_request,
+                user_profile,
+                constraints,
+                shared_state_data
+            )
+            
+            # Store successful results in cache (TTL 1 hour)
+            if result and not result.get('is_error'):
+                cache_manager.set(cache_key, result, ttl=3600)
+            
+            return result
+        except Exception as e:
+            # Use ErrorManager for standardized handling
+            from wellsync_ai.utils.error_manager import get_error_manager
+            error_context = {'user_id': user_profile.get('user_id'), 'state_id': shared_state_data.get('state_id')}
+            error_info = get_error_manager().handle_error(e, f"Agent-{name}", error_context)
+            
+            logger.error(f"Agent {name} failed", error=error_info['message'])
+            
+            return {
+                'agent_name': name,
+                'is_error': True,
+                'error_details': error_info,
+                'confidence': 0.0,
+                'reasoning': f"Agent execution failed: {error_info['message']}",
+                'proposal': {} 
+            }
                 
         return proposals

@@ -5,6 +5,8 @@ __pycache__/
 
 # C extensions
 *.so
+# Documentation
+*docs/
 
 # Distribution / packaging
 .Python
@@ -147,3 +149,4 @@ dump.rdb
 
 # Swarms workspace
 agent_workspace/
+

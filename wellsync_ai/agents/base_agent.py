@@ -159,6 +159,11 @@ class WellnessAgent(Agent, ABC):
         self.domain = domain
         self.confidence_threshold = confidence_threshold
         self.memory = MemoryStore(agent_name)
+        
+        # Initialize Learning Manager
+        from wellsync_ai.agents.learning_manager import LearningManager
+        self.learning_manager = LearningManager(agent_name, domain)
+        
         self.domain_constraints = {}
         self.session_id = None
         
@@ -215,8 +220,18 @@ class WellnessAgent(Agent, ABC):
             # Update domain constraints
             self.domain_constraints.update(constraints)
             
-            # Build wellness-specific prompt
-            prompt = self.build_wellness_prompt(user_data, constraints, shared_state)
+            # Get learning context (fatigue, compliance, etc.)
+            learning_context = {}
+            if user_data.get('user_id'):
+                learning_context = self.learning_manager.get_learning_context(user_data['user_id'])
+            
+            # Build wellness-specific prompt with learning context
+            # We pass learning_context as part of user_data or a separate arg depending on implementation
+            # For backward compatibility, we'll inject it into kwargs-like structure or modify user_data
+            user_data_with_learning = user_data.copy()
+            user_data_with_learning['learning_context'] = learning_context
+            
+            prompt = self.build_wellness_prompt(user_data_with_learning, constraints, shared_state)
             
             # Generate response using Swarms Agent
             response = self.run(prompt)
@@ -230,27 +245,32 @@ class WellnessAgent(Agent, ABC):
             return parsed_response
             
         except Exception as e:
-            # Return error proposal with low confidence
-            error_response = {
+            # Use ErrorManager for standardized handling
+            from wellsync_ai.utils.error_manager import get_error_manager
+            
+            # Context for the error
+            error_context = {
+                'user_id': user_data.get('user_id'),
+                'domain': self.domain,
+                'session_id': self.session_id,
+                'input_constraints': constraints
+            }
+            
+            # Process error
+            error_info = get_error_manager().handle_error(e, f"Agent-{self.agent_name}", error_context)
+            
+            # Return standardized error proposal
+            return {
                 'agent_name': self.agent_name,
                 'domain': self.domain,
-                'error': str(e),
+                'is_error': True,
+                'error_details': error_info,
+                'error': error_info['message'],
                 'confidence': 0.0,
                 'proposal': None,
                 'timestamp': datetime.now().isoformat(),
-                'reasoning': f"Agent {self.agent_name} encountered an error: {str(e)}"
+                'reasoning': f"Agent {self.agent_name} encountered an error: {error_info['message']}"
             }
-            
-            # Log error
-            db_manager = get_database_manager()
-            db_manager.log_system_event(
-                'ERROR',
-                f"Agent {self.agent_name} processing failed",
-                self.agent_name,
-                {'error': str(e), 'user_data': user_data}
-            )
-            
-            return error_response
     
     @abstractmethod
     def build_wellness_prompt(
