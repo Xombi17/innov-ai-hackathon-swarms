@@ -54,222 +54,148 @@ st.markdown("""
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 24px;
-        padding: 2rem;
+        border-radius: 20px;
+        padding: 1.5rem;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        margin-bottom: 1rem;
     }
 
     .glass-card:hover {
-        transform: translateY(-5px) scale(1.01);
+        transform: translateY(-2px);
+        border-color: rgba(99, 102, 241, 0.3);
         background: rgba(30, 41, 59, 0.85);
-        border-color: rgba(99, 102, 241, 0.5);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
     }
     
-    /* ANIMATIONS */
-    @keyframes float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-        100% { transform: translateY(0px); }
+    .input-label {
+        color: #94a3b8;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.5rem;
     }
     
-    .floating-icon {
-        animation: float 6s ease-in-out infinite;
-    }
-
-    /* METRICS */
-    .metric-value {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 2.5rem;
-        font-weight: 700;
+    .big-stat {
+        font-size: 2rem;
+        font-weight: 800;
         background: linear-gradient(to right, #818cf8, #c084fc);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
-
-    .metric-label {
-        color: #94a3b8;
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        font-weight: 600;
-    }
-    
-    /* STATUS INDICATORS */
-    .status-dot {
-        height: 10px;
-        width: 10px;
-        border-radius: 50%;
-        display: inline-block;
-        margin-right: 8px;
-    }
-    .status-online { background-color: #10b981; box-shadow: 0 0 10px #10b981; }
-    .status-offline { background-color: #ef4444; box-shadow: 0 0 10px #ef4444; }
-
-    /* SIDEBAR */
-    section[data-testid="stSidebar"] {
-        background-color: rgba(15, 23, 42, 0.95);
-        border-right: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    
 </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER SECTION WITH TYPED EFFECT ---
-# We inject a custom script for the typed effect since Streamlit doesn't support it natively
+# --- HEADER ---
 st.markdown("""
-<script src="https://unpkg.com/typed.js@2.0.16/dist/typed.umd.js"></script>
-<script>
-    function startTyped() {
-        var typed = new Typed('#typed-element', {
-            strings: ['Autonomous Wellness.', 'Multi-Agent Orchestration.', 'Hyper-Personalized Plans.', 'Hackathon Winning Tech.'],
-            typeSpeed: 50,
-            backSpeed: 30,
-            loop: true
-        });
-    }
-    // Wait for element to exist
-    var checkExist = setInterval(function() {
-       if (document.querySelector('#typed-element')) {
-          clearInterval(checkExist);
-          startTyped();
-       }
-    }, 100);
-</script>
+<div style="text-align: center; margin-bottom: 2rem;">
+    <h1 style="font-size: 3rem; margin-bottom: 0.5rem;">☀️ Morning Check-in</h1>
+    <p style="color: #94a3b8; font-size: 1.1rem;">
+        Good morning! Tell us how you're feeling so our agents can adapt your plan.
+    </p>
+</div>
 """, unsafe_allow_html=True)
 
-col1, col2 = st.columns([1, 5])
-with col1:
-    st.markdown('<div class="floating-icon"><img src="https://img.icons8.com/3d-fluency/94/brain.png" width="100%"></div>', unsafe_allow_html=True)
-with col2:
-    st.markdown("""
-    <h1 style="font-size: 4rem; margin-bottom: 0;">WellSync AI</h1>
-    <div style="font-size: 1.5rem; color: #cbd5e1; font-family: 'JetBrains Mono', monospace; height: 1.5em;">
-        <span id="typed-element"></span>
-    </div>
-    """, unsafe_allow_html=True)
+# Initialize Session State
+if "daily_checkin" not in st.session_state:
+    st.session_state.daily_checkin = {}
 
-st.markdown("---")
-
-# --- SYSTEM HEALTH CHECK ---
-API_URL = "http://localhost:5000"
-
-def check_system_status():
-    try:
-        # Check API Health
-        api_resp = requests.get(f"{API_URL}/health", timeout=1)
-        api_status = api_resp.json().get('status') == 'healthy'
+with st.form("daily_checkin_form"):
+    
+    # === ROW 1: SLEEP & ENERGY ===
+    c1, c2 = st.columns(2)
+    
+    with c1:
+        st.markdown("""
+        <div class="glass-card">
+            <div class="input-label">💤 Last Night's Sleep</div>
+        """, unsafe_allow_html=True)
         
-        # Check Agents (Simulated check via API - in real prod this would ping individual services)
-        try:
-            agent_resp = requests.get(f"{API_URL}/agents/status", timeout=1)
-            agents_active = len(agent_resp.json().get('agents', []))
-            
-            # Simulated randomness for "Living" feel if status is unknown
-            import random
-            if agents_active == 0: 
-                agents_active = 5 if api_status else 0
-                
-        except:
-             agents_active = 4 # Fallback for demo
+        sleep_hours = st.slider("Hours Slept", 0.0, 12.0, 7.0, 0.5)
+        sleep_quality = st.select_slider("Sleep Quality", options=["Terrible", "Poor", "Fair", "Good", "Excellent"], value="Good")
         
-        return True, agents_active, "System Operational"
-    except Exception as e:
-        return False, 0, f"Connection Failed: {str(e)}"
+        st.markdown("</div>", unsafe_allow_html=True)
 
-# Simulating a "Live" check effect
-with st.spinner("Syncing with Swarms Network..."):
-    time.sleep(0.8) # Slightly longer for effect
-    status, active_agents, message = check_system_status()
+    with c2:
+        st.markdown("""
+        <div class="glass-card">
+            <div class="input-label">🔋 Morning Energy</div>
+        """, unsafe_allow_html=True)
+        
+        energy_level = st.select_slider("Energy Level", options=["Exhausted", "Low", "Moderate", "High", "Energized"], value="Moderate")
+        soreness = st.radio("Muscle Soreness?", ["None", "Mild", "Moderate", "Severe"], horizontal=True)
+        
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+    # === ROW 2: NUTRITION & MENTAL ===
+    c3, c4 = st.columns(2)
+    
+    with c3:
+        st.markdown("""
+        <div class="glass-card">
+            <div class="input-label">🍽️ Nutrition Context</div>
+        """, unsafe_allow_html=True)
+        
+        last_meal_time = st.time_input("Last Meal Time (Yesterday)", datetime.strptime("20:00", "%H:%M").time())
+        missed_meals = st.checkbox("Missed any meals yesterday?")
+        overate = st.checkbox("Overate yesterday?")
+        
+        st.markdown("</div>", unsafe_allow_html=True)
 
-# --- LIVE DASHBOARD ---
-st.markdown("### ⚡ Live System Matrix")
+    with c4:
+        st.markdown("""
+        <div class="glass-card">
+            <div class="input-label">🧠 Mental State</div>
+        """, unsafe_allow_html=True)
+        
+        stress = st.slider("Current Stress (1-10)", 1, 10, 3)
+        mood = st.select_slider("Current Mood", options=["Stressed", "Anxious", "Neutral", "Focused", "Happy"], value="Neutral")
+        
+        st.markdown("</div>", unsafe_allow_html=True)
 
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
-    st.markdown(f"""
-    <div class="glass-card">
-        <div class="metric-label">System Status</div>
-        <div style="margin-top: 10px; font-size: 1.5rem; font-weight: 600; color: {'#10b981' if status else '#ef4444'}">
-            <span class="status-dot {'status-online' if status else 'status-offline'}"></span>
-            {'OPERATIONAL' if status else 'OFFLINE'}
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col2:
-    st.markdown(f"""
-    <div class="glass-card">
-        <div class="metric-label">Active Agents</div>
-        <div class="metric-value">{active_agents if status else 0}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col3:
+    # === ROW 3: CONTEXT ===
     st.markdown("""
     <div class="glass-card">
-        <div class="metric-label">Intelligence</div>
-        <div class="metric-value" style="font-size: 1.8rem;">Groq LLaMA3</div>
-    </div>
+        <div class="input-label">📝 Additional Context (Agents read this)</div>
     """, unsafe_allow_html=True)
+    
+    notes = st.text_area("Anything else?", placeholder="e.g., Traveling today, have a headache, exam week...", height=80)
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # === SUBMIT ===
+    submitted = st.form_submit_button("🚀 Generate Today's Plan", type="primary", use_container_width=True)
 
-with col4:
+if submitted:
+    # Save to session state
+    st.session_state.daily_checkin = {
+        "sleep": {
+            "hours": sleep_hours,
+            "quality": sleep_quality.lower(),
+            "wake_time": datetime.now().strftime("%H:%M") # Approx
+        },
+        "recovery": {
+            "energy_level": energy_level.lower(),
+            "soreness": soreness.lower()
+        },
+        "nutrition": {
+            "last_meal": str(last_meal_time),
+            "missed_meals": missed_meals,
+            "overate": overate
+        },
+        "mental": {
+            "stress_level": stress,
+            "mood": mood.lower()
+        },
+        "context_notes": notes,
+        "timestamp": time.time()
+    }
+    
+    st.success("Check-in saved! Redirecting to plan generation...")
+    st.switch_page("pages/2_Wellness_Plan.py")
+
+# --- FOOTER ---
+if not st.session_state.daily_checkin:
     st.markdown("""
-    <div class="glass-card">
-        <div class="metric-label">Architecture</div>
-        <div class="metric-value" style="font-size: 1.8rem;">Swarms + Redis</div>
+    <div style="text-align: center; margin-top: 2rem; color: #64748b; font-size: 0.9rem;">
+        No check-in today? Agents will use your historical average.
     </div>
     """, unsafe_allow_html=True)
-
-# --- HOW IT WORKS (VISUAL) ---
-st.markdown("### 🧬 The Agent Swarm")
-
-c1, c2, c3 = st.columns([1, 1, 1])
-
-with c1:
-    st.markdown("""
-    <div class="glass-card" style="height: 100%">
-        <h4>💪 Fitness Agent</h4>
-        <p style="color: #94a3b8; font-size: 0.9rem;">
-        Analyzes recovery data, fatigue levels, and goals to prescribe the optimal daily workout load.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-
-with c2:
-    st.markdown("""
-    <div class="glass-card" style="height: 100%">
-        <h4>🥗 Nutrition Agent</h4>
-        <p style="color: #94a3b8; font-size: 0.9rem;">
-        Calculates caloric needs based on workout intensity and plans meals that fit your budget.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-
-with c3:
-    st.markdown("""
-    <div class="glass-card" style="height: 100%">
-        <h4>🧠 Coordinator Agent</h4>
-        <p style="color: #94a3b8; font-size: 0.9rem;">
-        Resolves conflicts (e.g., "High Fatigue" vs "Heavy Lift") to ensure plan achievability.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-
-# --- FOOTER / CTA ---
-st.write("")
-st.write("")
-
-if not status:
-    st.warning(f"⚠️ **API Disconnected**: Please ensure `python run_api.py` is running in the terminal.")
-else:
-    st.markdown("""
-    <div style="text-align: center; margin-top: 2rem;">
-        <span style="background: rgba(99, 102, 241, 0.1); color: #818cf8; padding: 0.5rem 1rem; border-radius: 99px; border: 1px solid rgba(99, 102, 241, 0.3);">
-            🚀 Ready to start? Open the sidebar and select <b>User Profile</b>
-        </span>
-    </div>
-    """, unsafe_allow_html=True)
-

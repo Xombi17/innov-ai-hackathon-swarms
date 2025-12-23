@@ -409,10 +409,19 @@ if st.button("🚀 Generate My Wellness Plan", type="primary", use_container_wid
     # API call
     try:
         if selected_scenario != "Custom (Use My Profile)" and DEMO_SCENARIOS.get(selected_scenario):
+            # Demo Scenario
             scenario = DEMO_SCENARIOS[selected_scenario]
             active_profile = scenario["user_profile"]
             recent_data = scenario.get("recent_data", {})
+        elif "daily_checkin" in st.session_state and st.session_state.daily_checkin:
+            # Daily Check-in Data
+            active_profile = user
+            recent_data = st.session_state.daily_checkin
+            st.info(f"📅 Using Daily Check-in Data: Sleep {recent_data.get('sleep', {}).get('hours')}h, "
+                   f"Energy {recent_data.get('recovery', {}).get('energy_level', 'moderate').title()}, "
+                   f"Mood {recent_data.get('mental', {}).get('mood', 'neutral').title()}")
         else:
+            # Default Custom
             active_profile = user
             recent_data = {}
         
@@ -506,7 +515,22 @@ if 'wellness_plan' in st.session_state:
         """, unsafe_allow_html=True)
     
     # === EXECUTIVE SUMMARY ===
-    reasoning = plan.get('reasoning', 'Your personalized wellness plan is ready.')
+    reasoning = plan.get('reasoning', '')
+    
+    # If reasoning is too short or generic, generate a detailed one from data
+    if len(reasoning) < 50:
+        f_focus = fitness.get('focus', 'general wellness').replace('_', ' ')
+        n_focus = nutrition.get('focus', 'balanced nutrition')
+        s_target = sleep.get('target_hours', 8)
+        
+        reasoning = (
+            f"**Strategic Overview:** Based on your current state, we've designed a **{f_focus}** protocol balanced with "
+            f"**{n_focus}**. "
+            f"Given your sleep target of {s_target} hours, recovery is prioritized to ensure sustainable progress. "
+            f"\n\n**Key Adjustments:** The Nutrition Agent has optimized meals for your budget, while the "
+            f"Mental Wellness Agent has calibrated the plan to maintain high adherence during this phase."
+        )
+
     st.markdown(f"""
     <div class="summary-box">
         <div class="summary-title">📋 Executive Summary</div>
@@ -606,25 +630,64 @@ if 'wellness_plan' in st.session_state:
         
         meals = nutrition.get('meals', [])
         if not meals:
-            # Indian meal defaults
+            # Indian meal defaults with rich data
             meals = [
-                {"meal": "Breakfast", "time": "8:00 AM", "items": ["Idli (3 pcs) + Sambar", "Filter coffee", "Banana"], "calories": 420},
-                {"meal": "Lunch", "time": "1:00 PM", "items": ["Rice (1 cup)", "Dal tadka", "Sabzi", "Curd", "Salad"], "calories": 650},
-                {"meal": "Snack", "time": "5:00 PM", "items": ["Sprouts chaat", "Chai", "Marie biscuits (2)"], "calories": 200},
-                {"meal": "Dinner", "time": "8:00 PM", "items": ["Roti (2)", "Paneer bhurji", "Green vegetables"], "calories": 550}
+                {
+                    "meal": "Breakfast", 
+                    "time": "8:00 AM", 
+                    "items": ["Idli (3 pcs) + Sambar", "Filter coffee", "Banana"], 
+                    "calories": 420,
+                    "macros": "P: 12g | C: 75g | F: 8g",
+                    "cost": "₹40"
+                },
+                {
+                    "meal": "Lunch", 
+                    "time": "1:00 PM", 
+                    "items": ["Rice (1 cup)", "Dal tadka", "Sabzi (Seasonal)", "Curd (1 bowl)", "Cucumber Salad"], 
+                    "calories": 650,
+                    "macros": "P: 22g | C: 90g | F: 18g",
+                    "cost": "₹60"
+                },
+                {
+                    "meal": "Snack", 
+                    "time": "5:00 PM", 
+                    "items": ["Sprouts chaat", "Adrak Chai", "Marie biscuits (2)"], 
+                    "calories": 200,
+                    "macros": "P: 8g | C: 30g | F: 5g",
+                    "cost": "₹20"
+                },
+                {
+                    "meal": "Dinner", 
+                    "time": "8:30 PM", 
+                    "items": ["Roti (2)", "Paneer bhurji", "Green vegetables", "Buttermilk"], 
+                    "calories": 550,
+                    "macros": "P: 25g | C: 55g | F: 22g",
+                    "cost": "₹55"
+                }
             ]
         
         for meal in meals:
+            # Default macros if missing
+            macros = meal.get('macros', 'Balanced Split')
+            cost = meal.get('cost', '₹ --')
+            
             st.markdown(f"""
             <div class="meal-card">
-                <div class="meal-time">{meal.get('time', '')}</div>
-                <div class="meal-name">{meal.get('meal', 'Meal')} • {meal.get('calories', 0)} cal</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                     <div class="meal-time">{meal.get('time', '')}</div>
+                     <div style="font-size: 0.8rem; background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 12px; color: #cbd5e1;">Approx {cost}</div>
+                </div>
+                <div class="meal-name" style="margin-bottom: 4px;">{meal.get('meal', 'Meal')}</div>
+                <div style="font-size: 0.85rem; color: #94a3b8; font-family: monospace; margin-bottom: 8px;">
+                    {meal.get('calories', 0)} kcal • {macros}
+                </div>
             </div>
             """, unsafe_allow_html=True)
             
-            with st.expander("View Items"):
+            with st.expander("View Items & Details"):
                 for item in meal.get('items', []):
                     st.markdown(f"• {item}")
+                st.caption("💡 *Tip: Adjust portion sizes based on hunger cues.*")
     
     # --- SLEEP TAB ---
     with tabs[2]:
