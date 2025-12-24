@@ -8,7 +8,7 @@ from contextlib import contextmanager
 try:
     from supabase import create_client, Client
     SUPABASE_AVAILABLE = True
-except ImportError:
+except Exception:
     SUPABASE_AVAILABLE = False
 
 from wellsync_ai.utils.config import get_config
