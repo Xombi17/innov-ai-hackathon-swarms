@@ -310,11 +310,14 @@ def create_flask_app() -> Flask:
             health_status = {
                 'status': 'healthy' if db_status and redis_status else 'unhealthy',
                 'timestamp': datetime.now().isoformat(),
+                'version': '1.0.1',
                 'services': {
-                    'database': 'healthy' if db_status else 'unhealthy',
+                    'database': {
+                        'status': 'healthy' if db_status else 'unhealthy',
+                        'type': 'supabase' if db_manager.use_supabase else 'sqlite'
+                    },
                     'redis': 'healthy' if redis_status else 'unhealthy'
-                },
-                'version': '0.1.0'
+                }
             }
             
             status_code = 200 if health_status['status'] == 'healthy' else 503
