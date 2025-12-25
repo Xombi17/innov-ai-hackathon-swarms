@@ -150,3 +150,6 @@ dump.rdb
 # Swarms workspace
 agent_workspace/
 
+
+# Frontend repository
+web/

@@ -15,6 +15,7 @@ from functools import wraps
 
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS
+from flasgger import Swagger, swag_from
 import structlog
 
 from wellsync_ai.utils.config import get_config
@@ -73,6 +74,45 @@ def create_flask_app() -> Flask:
     
     # Enable CORS for cross-origin requests
     CORS(app, origins=config.allowed_origins)
+    
+    # Configure Swagger/OpenAPI documentation
+    swagger_config = {
+        "headers": [],
+        "specs": [
+            {
+                "endpoint": "apispec",
+                "route": "/apispec.json",
+                "rule_filter": lambda rule: True,
+                "model_filter": lambda tag: True,
+            }
+        ],
+        "static_url_path": "/flasgger_static",
+        "swagger_ui": True,
+        "specs_route": "/docs"
+    }
+    
+    swagger_template = {
+        "swagger": "2.0",
+        "info": {
+            "title": "WellSync AI API",
+            "description": "Multi-Agent Wellness System API - Generates personalized wellness plans using AI agents for Fitness, Nutrition, Sleep, and Mental Wellness.",
+            "version": "1.0.0",
+            "contact": {
+                "name": "WellSync AI Team",
+                "url": "https://wellsync.ai"
+            }
+        },
+        "basePath": "/",
+        "schemes": ["http", "https"],
+        "tags": [
+            {"name": "Health", "description": "API health and status endpoints"},
+            {"name": "Wellness Plan", "description": "Generate and manage wellness plans"},
+            {"name": "Agents", "description": "AI Agent status and management"},
+            {"name": "Nutrition", "description": "Nutrition-specific endpoints"}
+        ]
+    }
+    
+    Swagger(app, config=swagger_config, template=swagger_template)
     
     # Configure logging
     if not app.debug:
@@ -283,7 +323,30 @@ def create_flask_app() -> Flask:
     # API Routes
     @app.route('/', methods=['GET'])
     def index():
-        """Root endpoint returning basic API info."""
+        """
+        API Root
+        ---
+        tags:
+          - Health
+        summary: Get API information
+        description: Returns basic API info and available endpoints
+        responses:
+          200:
+            description: API info returned successfully
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                service:
+                  type: string
+                version:
+                  type: string
+                status:
+                  type: string
+                endpoints:
+                  type: object
+        """
         return jsonify({
             'success': True,
             'service': 'WellSync AI API',
@@ -293,13 +356,38 @@ def create_flask_app() -> Flask:
             'endpoints': {
                 'health': '/health',
                 'wellness_plan': '/wellness-plan (POST)',
-                'agents_status': '/agents/status'
+                'agents_status': '/agents/status',
+                'docs': '/docs'
             }
         }), 200
 
     @app.route('/health', methods=['GET'])
     def health_check():
-        """Health check endpoint."""
+        """
+        Health Check
+        ---
+        tags:
+          - Health
+        summary: Check API health status
+        description: Returns health status of API and connected services (database, Redis)
+        responses:
+          200:
+            description: API is healthy
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [healthy, unhealthy]
+                timestamp:
+                  type: string
+                version:
+                  type: string
+                services:
+                  type: object
+          503:
+            description: API is unhealthy
+        """
         try:
             # Check database connection
             db_status = db_manager.health_check()
@@ -337,10 +425,68 @@ def create_flask_app() -> Flask:
     @validate_user_data
     def generate_wellness_plan(request_data: Dict[str, Any]):
         """
-        Generate wellness plan endpoint.
-        
-        Accepts user data and constraints, returns a comprehensive
-        wellness plan coordinated across all domains.
+        Generate Wellness Plan
+        ---
+        tags:
+          - Wellness Plan
+        summary: Generate a personalized wellness plan
+        description: Uses multi-agent AI system to create coordinated fitness, nutrition, sleep, and mental wellness recommendations
+        parameters:
+          - in: body
+            name: body
+            required: true
+            schema:
+              type: object
+              required:
+                - user_profile
+                - constraints
+              properties:
+                user_profile:
+                  type: object
+                  description: User profile data
+                  properties:
+                    user_id:
+                      type: string
+                    age:
+                      type: integer
+                    weight:
+                      type: number
+                    height:
+                      type: number
+                    fitness_level:
+                      type: string
+                      enum: [beginner, intermediate, advanced]
+                constraints:
+                  type: object
+                  description: User constraints and limitations
+                  properties:
+                    time_available:
+                      type: string
+                    budget:
+                      type: number
+                    dietary_restrictions:
+                      type: array
+                      items:
+                        type: string
+                goals:
+                  type: object
+                  description: User wellness goals
+        responses:
+          200:
+            description: Wellness plan generated successfully
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                plan:
+                  type: object
+                state_id:
+                  type: string
+          400:
+            description: Invalid request data
+          500:
+            description: Plan generation failed
         """
         try:
             logger.info(
@@ -396,15 +542,8 @@ def create_flask_app() -> Flask:
             orchestrator = WellnessWorkflowOrchestrator()
             
             # Run async workflow in sync context
-            # Note: In production, consider using Quart or async-native Flask patterns
-            # For now, we use asyncio.run() or a new loop
-            try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-            
-            result = loop.run_until_complete(orchestrator.execute_workflow(shared_state.state_id))
+            # Using asyncio.run() ensures a fresh loop for each request, preventing thread threading issues
+            result = asyncio.run(orchestrator.execute_workflow(shared_state.state_id))
 
             if not result:
                 raise WellnessAPIError(
@@ -587,10 +726,31 @@ def create_flask_app() -> Flask:
     @app.route('/agents/status', methods=['GET'])
     def get_agents_status():
         """
-        Get status of all wellness agents.
-        
-        Returns health and status information for all agents
-        in the system.
+        Get Agents Status
+        ---
+        tags:
+          - Agents
+        summary: Get status of all AI agents
+        description: Returns health and status information for all wellness agents in the system
+        responses:
+          200:
+            description: Agent status returned successfully
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                agents:
+                  type: object
+                  description: Status of each agent
+                total_agents:
+                  type: integer
+                healthy_agents:
+                  type: integer
+                swarm_architecture:
+                  type: string
+          500:
+            description: Failed to get agent status
         """
         try:
             logger.info(

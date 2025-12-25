@@ -34,6 +34,7 @@ mypy>=1.0.0
 
 # Web Framework Extensions
 flask-cors>=4.0.0
+flasgger>=0.9.7
 gunicorn>=21.0.0
 
 # Monitoring and Logging
