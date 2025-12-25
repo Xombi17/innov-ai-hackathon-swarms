@@ -1,148 +1,152 @@
----
-title: WellSync AI
-emoji: 🧘
-colorFrom: blue
-colorTo: green
-sdk: docker
-pinned: false
----
+# WellSync AI - The Autonomous Wellness Orchestrator 🌿🧠
 
-# WellSync AI - Autonomous Multi-Agent Wellness Orchestrator 🧠💪🥗
+![License](https://img.shields.io/badge/License-MIT-blue.svg)
+![Status](https://img.shields.io/badge/Status-Hackathon_Submission-green.svg)
+![Agents](https://img.shields.io/badge/AI-Multi--Agent_Swarm-purple.svg)
 
-> **Hackathon Submission**: A fully autonomous wellness system powered by **Swarms AI** and **Google Gemini/OpenAI**.
+> **Live API**: [https://xombi17-wellsync-api.hf.space](https://xombi17-wellsync-api.hf.space)
 
-WellSync AI is a multi-agent system that generates hyper-personalized wellness plans by orchestrating four domain-specific AI agents: **Fitness**, **Nutrition**, **Sleep**, and **Mental Wellness**. These agents collaborate, debate, and resolve conflicts (e.g., "High intensity workout" vs "Poor sleep recovery") to produce a unified, scientifically grounded lifestyle plan.
+**WellSync AI** is a complete wellness ecosystem powered by autonomous AI agents. It intelligently orchestrates your fitness, nutrition, and mental health through a collaboration of specialized agents (Fitness, Nutrition, Sleep, Mental) that debate and resolve conflicts to build the perfect plan for *you*.
+
+This **Monorepo** contains the entire ecosystem:
+1.  **📱 Mobile App** (`wellsync_flutterapp`): The primary user interface for daily tracking.
+2.  **🧠 AI Backend** (`wellsync_ai`): The Python/Flask brain running the Agent Swarm.
+3.  **🌐 Web Platform** (`web`): Next.js landing page and dashboard.
 
 ---
 
 ## 🏗️ Architecture
 
-The system follows a **Shared State Orchestration** pattern:
-
 ```mermaid
 graph TD
-    User([User Profile & Goals]) --> API[Flask API]
-    API --> Orchestrator[Wellness Orchestrator]
+    User([User]) <--> Mobile[Flutter Mobile App]
+    User <--> Web[Next.js Web Dashboard]
     
-    subgraph "Agent Swarm"
+    Mobile <--> API[Flask API (wellsync_ai)]
+    Web <--> API
+    
+    subgraph "The Swarm Brain (wellsync_ai)"
+        API --> Orchestrator[Swarm Orchestrator]
         Orchestrator --> Fitness[Fitness Agent]
         Orchestrator --> Nutrition[Nutrition Agent]
+        Orchestrator --> Mental[Mental Agent]
         Orchestrator --> Sleep[Sleep Agent]
-        Orchestrator --> Mental[Mental Wellness Agent]
         
-        Fitness <--> SharedState[(Redis Shared State)]
-        Nutrition <--> SharedState
-        Sleep <--> SharedState
-        Mental <--> SharedState
+        Fitness & Nutrition & Mental & Sleep <--> SharedState[(Redis/Memory Context)]
     end
     
-    Fitness & Nutrition & Sleep & Mental --> Coordinator[Coordinator Agent]
-    Coordinator --> FinalPlan([Unified Wellness Plan])
-    FinalPlan --> UI[Streamlit Dashboard]
+    API <--> DB[(Supabase Postgres)]
 ```
+
+---
 
 ## 🚀 Features
 
--   **Multi-Agent Collaboration**: Agents share context (e.g., Nutrition Agent knows you did a heavy workout and suggests more protein).
--   **Conflict Resolution**: The Coordinator Agent detects and resolves contradictions (e.g., "Don't schedule a 5am run if the user slept 4 hours").
--   **Platform Agnostic LLM**: Supports **Google Gemini** (Free Tier) and **OpenAI GPT-4**.
--   **Resilient Infrastructure**: Redis for state management with automatic in-memory fallback.
--   **High Performance**: Parallel agent execution and semantic caching for <3s response times.
--   **Proactive UI**: Glassmorphism-based Streamlit interface with real-time agent activity visualization.
+*   **Multi-Agent Intelligence**: Agents don't just output text; they *collaborate*. If the Sleep Agent sees you slept poorly, it tells the Fitness Agent to reduce workout intensity.
+*   **Offline-First Mobile**: The Flutter app caches your plan locally (`SharedPreferences`), so you can check off tasks even without internet.
+*   **Real-Time "Thinking"**: Watch the agents think, debate, and finalize your plan in real-time via the API.
+*   **Immersive UI**: Glassmorphism design system across both Mobile and Web for a futuristic feel.
 
 ---
 
 ## 🛠️ Setup Guide
 
-### Prerequisites
--   Python 3.10+
--   Redis (Optional, but recommended. System runs in memory mode without it).
--   API Key: **Google Gemini API Key** (Free) or **OpenAI API Key**.
+### 1. 🧠 AI Backend Setup (`root`)
 
-### 1. Installation
+The heart of the system. Runs on Python 3.10+.
 
 ```bash
-# Clone the repository
-git clone https://github.com/Xombi17/innov-ai-hackathon-swarms.git
-cd innov-ai-hackathon-swarms
-
-# Create virtual environment
-python -m venv venv
-# Windows
-venv\Scripts\activate
-# Linux/Mac
-source venv/bin/activate
-
-# Install dependencies
+# 1. Install Dependencies
 pip install -r requirements.txt
-```
 
-### 2. Configuration
+# 2. Configure Environment
+# Create .env and add:
+# GEMINI_API_KEY=your_key_here
+# SUPABASE_URL=your_url
+# SUPABASE_KEY=your_key
 
-Create a `.env` file in the root directory:
-
-```bash
-# .env
-LLM_PROVIDER=gemini
-LLM_MODEL=gemini/gemini-3-flash-preview
-GEMINI_API_KEY=your_gemini_key_here
-
-# Supabase Cloud Backend (Optional - Replaces Local SQLite)
-SUPABASE_URL=https://xvhndmsndogkvpwuemzl.supabase.co
-SUPABASE_KEY=your_supabase_anon_or_service_key
-
-# Optional: SQLite DB (Fallback if Supabase is not configured)
-DATABASE_URL=sqlite:///data/databases/wellsync.db
-```
-
-### 3. Initialize Database
-
-Run the database initialization script:
-```bash
-python init_db.py
-```
-
----
-
-## 🏃‍♂️ Usage
-
-### 1. Start the Backend API
-The core intelligence lives in the Flask API.
-
-```bash
+# 3. Run the Server
 python run_api.py
 ```
-*API will start on `http://localhost:5000`*
+*Server runs at `http://localhost:5000`*
 
-### 2. Start the User Interface
-Open a new terminal and launch the Streamlit dashboard.
+### 2. 📱 Mobile App Setup (`wellsync_flutterapp`)
+
+A high-performance Flutter application.
 
 ```bash
-streamlit run wellsync_ai/ui/Home.py
+cd wellsync_flutterapp
+
+# 1. Get Dependencies
+flutter pub get
+
+# 2. Run App
+flutter run
 ```
-*UI will open in your browser.*
+*Note: By default, the app connects to the hosted API (`https://xombi17-wellsync-api.hf.space`). To use local backend, update `lib/core/constants.dart`.*
 
----
+### 3. 🌐 Web Platform Setup (`web`)
 
-## 📂 Project Structure
+Next.js 16 + Tailwind CSS 4 + GSAP Animations.
 
--   `wellsync_ai/agents/`: Core logic for all 5 agents (Base, Fitness, Nutrition, Sleep, Mental, Coordinator).
--   `wellsync_ai/workflows/`: Orchestration logic managing the agent lifecycle.
--   `wellsync_ai/api/`: Flask API endpoints.
--   `wellsync_ai/data/`: Database models and Redis/Memory managers.
--   `wellsync_ai/ui/`: Streamlit frontend application.
--   `legacy/`: Old prototypes and experiments (kept for reference).
-
----
-
-## 🧪 Testing
-
-To test the connectivity without the UI:
 ```bash
-# PowerShell
-Invoke-RestMethod -Method POST -Uri "http://localhost:5000/wellness-plan" -Body '{"user_id": "test"}' -ContentType "application/json"
+cd web
+
+# 1. Install Dependencies
+npm install
+
+# 2. Run Dev Server
+npm run dev
+```
+*Web app runs at `http://localhost:3000`*
+
+---
+
+## 🧪 Tech Stack
+
+| Component | Tech Stack | Key Libraries |
+| :--- | :--- | :--- |
+| **Backend** | Python, Flask | `swarms`, `langchain`, `pydantic` |
+| **Mobile** | Flutter (Dart) | `flutter_riverpod`, `supabase_flutter`, `dio` |
+| **Web** | Next.js 16 (React 19) | `tailwindcss-v4`, `gsap`, `framer-motion` |
+| **Database** | PostgreSQL | Supabase |
+| **AI** | Google Gemini / OpenAI | Powered by Swarms Framework |
+
+---
+
+## 📂 Repository Structure
+
+```
+wellsync/
+├── wellsync_ai/          # 🧠 Python Agent Backend
+│   ├── agents/           # Agent definitions (Fitness, Nutrition, etc.)
+│   ├── api/              # Flask Routes
+│   └── utils/            # LLM Helpers
+│
+├── wellsync_flutterapp/  # 📱 Flutter Mobile Application
+│   ├── lib/
+│   │   ├── data/         # Repositories
+│   │   ├── domain/       # Models
+│   │   └── presentation/ # UI & Providers
+│
+├── web/                  # 🌐 Next.js Web Application
+│   ├── src/
+│   │   ├── app/          # App Router
+│   │   └── components/   # React Components
+│
+├── requirements.txt      # Python Dependencies
+├── README.md             # This file
+└── run_api.py            # Backend Entry Point
 ```
 
 ---
 
-**Built with ❤️ for Innovation Hackathon**
+## 🏆 Hackathon Submission
+
+Built by **Team Xombi17**.
+*   **Innovation**: bringing Multi-Agent Systems (MAS) to personal wellness.
+*   **Completeness**: Full stack solution (Mobile, Web, Backend, AI).
+*   **Design**: Premium, cohesive aesthetic.
+
+---
+*Generated by WellSync Intelligence Core.*
