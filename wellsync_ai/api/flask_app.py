@@ -107,6 +107,7 @@ def create_flask_app() -> Flask:
         "tags": [
             {"name": "Health", "description": "API health and status endpoints"},
             {"name": "Wellness Plan", "description": "Generate and manage wellness plans"},
+            {"name": "Chat", "description": "AI Wellness Coach chat"},
             {"name": "Agents", "description": "AI Agent status and management"},
             {"name": "Nutrition", "description": "Nutrition-specific endpoints"}
         ]
@@ -1182,6 +1183,144 @@ def create_flask_app() -> Flask:
                 status_code=500,
                 error_code="SUBMIT_NUTRITION_FEEDBACK_FAILED"
             )
+    
+    @app.route('/chat', methods=['POST'])
+    @validate_json_request(required_fields=['message'])
+    def chat_with_ai(request_data: Dict[str, Any]):
+        """
+        Chat with AI Wellness Coach
+        ---
+        tags:
+          - Chat
+        summary: Send a message to the AI wellness coach
+        description: Interact with an AI-powered wellness coach that can answer questions about fitness, nutrition, sleep, and mental wellness
+        parameters:
+          - in: body
+            name: body
+            required: true
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+                  description: User's message or question
+                  example: "How can I improve my sleep quality?"
+                user_id:
+                  type: string
+                  description: Optional user ID for context
+                context:
+                  type: object
+                  description: Optional context like current plan data
+        responses:
+          200:
+            description: AI response generated successfully
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                response:
+                  type: string
+                  description: AI coach response
+                timestamp:
+                  type: string
+          400:
+            description: Invalid request
+          500:
+            description: Chat failed
+        """
+        try:
+            logger.info(
+                "Chat request received",
+                request_id=g.request_id,
+                user_id=request_data.get('user_id', 'anonymous')
+            )
+            
+            message = request_data['message']
+            user_id = request_data.get('user_id')
+            context = request_data.get('context', {})
+            
+            # Build system prompt for wellness coach
+            system_prompt = """You are WellSync AI, a friendly and knowledgeable wellness coach. 
+You help users with:
+- Fitness advice (workouts, exercises, strength training)
+- Nutrition guidance (meal planning, healthy eating, hydration)
+- Sleep optimization (sleep hygiene, bedtime routines)
+- Mental wellness (stress management, mindfulness, meditation)
+
+Be encouraging, supportive, and give actionable advice. Keep responses concise but helpful.
+Use emojis occasionally to be friendly. If you don't know something specific about the user, 
+give general wellness advice."""
+            
+            # Try to use LiteLLM/Gemini for response
+            try:
+                import litellm
+                import os
+                
+                # Use Gemini Flash for fast responses
+                model = os.getenv('GEMINI_MODEL', 'gemini/gemini-2.0-flash')
+                
+                response = litellm.completion(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": message}
+                    ],
+                    max_tokens=500,
+                    temperature=0.7
+                )
+                
+                ai_response = response.choices[0].message.content
+                
+            except Exception as llm_error:
+                logger.warning(f"LLM call failed, using fallback: {llm_error}")
+                # Fallback intelligent responses
+                ai_response = get_fallback_response(message)
+            
+            response_data = {
+                'success': True,
+                'response': ai_response,
+                'timestamp': datetime.now().isoformat(),
+                'request_id': g.request_id
+            }
+            
+            return jsonify(response_data), 200
+            
+        except WellnessAPIError:
+            raise
+        except Exception as e:
+            logger.error(
+                "Chat failed",
+                request_id=g.request_id,
+                error=str(e),
+                traceback=traceback.format_exc()
+            )
+            
+            raise WellnessAPIError(
+                f"Chat failed: {str(e)}",
+                status_code=500,
+                error_code="CHAT_FAILED"
+            )
+    
+    def get_fallback_response(query: str) -> str:
+        """Generate fallback response when LLM is unavailable."""
+        q = query.lower()
+        
+        if any(word in q for word in ['workout', 'exercise', 'fitness', 'gym', 'strength']):
+            return "Great question about fitness! 💪 For effective workouts, I recommend:\n\n1. **Compound exercises** like squats, deadlifts, and push-ups work multiple muscle groups\n2. **Consistency** - aim for 3-4 sessions per week\n3. **Progressive overload** - gradually increase weight or reps\n\nWhat specific aspect of fitness would you like to focus on?"
+        
+        if any(word in q for word in ['sleep', 'tired', 'insomnia', 'rest']):
+            return "Sleep is crucial for recovery! 😴 Here are my top tips:\n\n1. **Consistent schedule** - same bedtime/wake time daily\n2. **Screen-free hour** before bed\n3. **Cool, dark room** (65-68°F ideal)\n4. **Limit caffeine** after 2 PM\n\nHow many hours are you currently sleeping?"
+        
+        if any(word in q for word in ['food', 'eat', 'meal', 'diet', 'nutrition', 'protein']):
+            return "Nutrition is the foundation of wellness! 🥗 Key principles:\n\n1. **Protein with every meal** (palm-sized portion)\n2. **Colorful vegetables** - aim for variety\n3. **Stay hydrated** - 8+ glasses of water\n4. **Minimize processed foods**\n\nWould you like meal suggestions or macro guidance?"
+        
+        if any(word in q for word in ['stress', 'anxious', 'anxiety', 'mental', 'meditation', 'mindful']):
+            return "Mental wellness matters! 🧘 Try these techniques:\n\n1. **4-7-8 breathing** - inhale 4s, hold 7s, exhale 8s\n2. **5-minute meditation** daily\n3. **Gratitude journaling** before bed\n4. **Nature walks** - even 10 minutes helps\n\nWhat's your biggest stressor right now?"
+        
+        return "Great question! ✨ As your wellness coach, I focus on four pillars:\n\n• **Fitness** - effective workouts for your goals\n• **Nutrition** - balanced eating for energy\n• **Sleep** - quality rest for recovery\n• **Mental** - stress management & mindfulness\n\nWhich area would you like to explore today?"
     
     return app
 
