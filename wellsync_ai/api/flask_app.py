@@ -589,10 +589,36 @@ def create_flask_app() -> Flask:
     @app.route('/wellness-plan/<state_id>', methods=['GET'])
     def get_wellness_plan_status(state_id: str):
         """
-        Get wellness plan status by state ID.
-        
-        Returns the current status and results of a wellness plan
-        generation request.
+        Get Wellness Plan Status
+        ---
+        tags:
+          - Wellness Plan
+        summary: Get status of a wellness plan by state ID
+        description: Returns current status and results of a wellness plan generation request
+        parameters:
+          - name: state_id
+            in: path
+            type: string
+            required: true
+            description: The state ID returned from plan generation
+        responses:
+          200:
+            description: Plan status retrieved successfully
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                state_id:
+                  type: string
+                status:
+                  type: string
+                current_plans:
+                  type: object
+          404:
+            description: Plan not found
+          500:
+            description: Failed to get status
         """
         try:
             logger.info(
@@ -648,10 +674,43 @@ def create_flask_app() -> Flask:
     @validate_json_request(required_fields=['feedback'])
     def submit_wellness_plan_feedback(state_id: str, request_data: Dict[str, Any]):
         """
-        Submit feedback for a wellness plan.
-        
-        Accepts user feedback on wellness plan recommendations
-        for learning and adaptation.
+        Submit Wellness Plan Feedback
+        ---
+        tags:
+          - Wellness Plan
+        summary: Submit feedback for a wellness plan
+        description: Accepts user feedback on plan recommendations for learning and adaptation
+        parameters:
+          - name: state_id
+            in: path
+            type: string
+            required: true
+            description: The state ID of the plan
+          - in: body
+            name: body
+            required: true
+            schema:
+              type: object
+              required:
+                - feedback
+              properties:
+                feedback:
+                  type: object
+                  description: User feedback data
+                  properties:
+                    rating:
+                      type: integer
+                    comments:
+                      type: string
+                    accepted:
+                      type: boolean
+        responses:
+          200:
+            description: Feedback submitted successfully
+          400:
+            description: Invalid feedback data
+          404:
+            description: Plan not found
         """
         try:
             logger.info(
@@ -861,9 +920,34 @@ def create_flask_app() -> Flask:
     @app.route('/nutrition/state/<user_id>', methods=['GET'])
     def get_nutrition_state(user_id: str):
         """
-        Get current nutrition state for a user.
-        
-        Returns budget, availability, history, and targets.
+        Get Nutrition State
+        ---
+        tags:
+          - Nutrition
+        summary: Get current nutrition state for a user
+        description: Returns budget, availability, meal history, and nutrition targets
+        parameters:
+          - name: user_id
+            in: path
+            type: string
+            required: true
+            description: User ID
+        responses:
+          200:
+            description: Nutrition state retrieved successfully
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                user_id:
+                  type: string
+                state:
+                  type: object
+                decision_context:
+                  type: object
+          500:
+            description: Failed to get nutrition state
         """
         try:
             logger.info(
@@ -906,9 +990,44 @@ def create_flask_app() -> Flask:
     @validate_json_request(required_fields=['user_profile'])
     def trigger_nutrition_decision(request_data: Dict[str, Any]):
         """
-        Trigger a nutrition decision using the hierarchical swarm.
-        
-        Runs the full decision loop with all worker agents.
+        Trigger Nutrition Decision
+        ---
+        tags:
+          - Nutrition
+        summary: Trigger a nutrition decision using hierarchical swarm
+        description: Runs the full decision loop with all nutrition worker agents
+        parameters:
+          - in: body
+            name: body
+            required: true
+            schema:
+              type: object
+              required:
+                - user_profile
+              properties:
+                user_profile:
+                  type: object
+                  description: User profile data
+                constraints:
+                  type: object
+                  description: User constraints
+                shared_state:
+                  type: object
+                  description: Shared state data
+        responses:
+          200:
+            description: Nutrition decision generated successfully
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                decision:
+                  type: object
+          400:
+            description: Invalid request data
+          500:
+            description: Nutrition decision failed
         """
         try:
             logger.info(
@@ -964,9 +1083,44 @@ def create_flask_app() -> Flask:
     @validate_json_request(required_fields=['user_id', 'feedback'])
     def submit_nutrition_feedback(request_data: Dict[str, Any]):
         """
-        Submit nutrition feedback (preferences, rejections).
-        
-        Updates user preference state for future decisions.
+        Submit Nutrition Feedback
+        ---
+        tags:
+          - Nutrition
+        summary: Submit nutrition feedback and preferences
+        description: Updates user preference state for future meal decisions
+        parameters:
+          - in: body
+            name: body
+            required: true
+            schema:
+              type: object
+              required:
+                - user_id
+                - feedback
+              properties:
+                user_id:
+                  type: string
+                  description: User ID
+                feedback:
+                  type: object
+                  description: Feedback data
+                  properties:
+                    rejected_items:
+                      type: array
+                      items:
+                        type: object
+                    meal_consumed:
+                      type: object
+                    expense:
+                      type: object
+        responses:
+          200:
+            description: Feedback processed successfully
+          400:
+            description: Invalid feedback data
+          500:
+            description: Failed to process feedback
         """
         try:
             logger.info(
