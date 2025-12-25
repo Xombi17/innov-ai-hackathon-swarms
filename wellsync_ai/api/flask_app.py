@@ -1320,7 +1320,7 @@ give general wellness advice."""
         if any(word in q for word in ['stress', 'anxious', 'anxiety', 'mental', 'meditation', 'mindful']):
             return "Mental wellness matters! 🧘 Try these techniques:\n\n1. **4-7-8 breathing** - inhale 4s, hold 7s, exhale 8s\n2. **5-minute meditation** daily\n3. **Gratitude journaling** before bed\n4. **Nature walks** - even 10 minutes helps\n\nWhat's your biggest stressor right now?"
         
-        return "Great question! ✨ As your wellness coach, I focus on four pillars:\n\n• **Fitness** - effective workouts for your goals\n• **Nutrition** - balanced eating for energy\n• **Sleep** - quality rest for recovery\n• **Mental** - stress management & mindfulness\n\nWhich area would you like to explore today?"
+        return "Great question! ✨ As your wellness coach, I focus on four pillars:\n\n* **Fitness**: effective workouts for your goals\n* **Nutrition**: balanced eating for energy\n* **Sleep**: quality rest for recovery\n* **Mental**: stress management & mindfulness\n\nWhich area would you like to explore today?"
     
     return app
 
