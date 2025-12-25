@@ -58,13 +58,35 @@ def chat_with_ai(request_data: Dict[str, Any]):
         # Initialize Chat Context
         chat_context = ChatContext(user_id)
         
-        # Add conversation history from request if available
-        # This handles the frontend memory we added
-        history = request_data.get('history', [])
-        if history:
-             # Logic to load history if ChatContext supports it
-             # Attempt to inject history
-             pass
+        # 1. Fetch User History from Database (Context Awareness)
+        from wellsync_ai.data.database import get_database_manager
+        db_manager = get_database_manager()
+        
+        # Get recent wellness plans to understand user's current regime
+        recent_plans = db_manager.get_user_history(user_id, limit=1)
+        
+        db_context = {}
+        if recent_plans:
+            latest_plan = recent_plans[0]
+            # safely extract plan details
+            plan_data = latest_plan.get('plan_data', {})
+            if isinstance(plan_data, str):
+                import json
+                try:
+                    plan_data = json.loads(plan_data)
+                except:
+                    pass
+            
+            db_context['latest_wellness_plan'] = plan_data
+            db_context['plan_date'] = latest_plan.get('timestamp')
+            
+            logger.info("Injected database context into chat", user_id=user_id)
+
+        # Merge with request context (request context takes precedence if keys collide, but we nest them)
+        full_context = {
+            "initial_context": context_data,
+            "database_context": db_context
+        }
 
         # Config
         config = LLMConfig()
@@ -83,7 +105,7 @@ def chat_with_ai(request_data: Dict[str, Any]):
              # Step 1324: response = chat_agent.generate_response(user_input, context_str)
              
              # Construct context string
-             context_str = f"User Context: {context_data}"
+             context_str = f"User Context: {full_context}"
              response_text = chat_agent.generate_response(message, context_str)
              
         except Exception as e:
