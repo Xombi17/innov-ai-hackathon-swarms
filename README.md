@@ -19,10 +19,10 @@ This **Monorepo** contains the entire ecosystem:
 
 ```mermaid
 graph TD
-    User([User]) <--> Mobile[Flutter Mobile App]
-    User <--> Web[Next.js Web Dashboard]
+    User([User]) <--> Mobile["Flutter Mobile App"]
+    User <--> Web["Next.js Web Dashboard"]
     
-    Mobile <--> API[Flask API (wellsync_ai)]
+    Mobile <--> API["Flask API (wellsync_ai)"]
     Web <--> API
     
     subgraph "The Swarm Brain (wellsync_ai)"
@@ -32,10 +32,10 @@ graph TD
         Orchestrator --> Mental[Mental Agent]
         Orchestrator --> Sleep[Sleep Agent]
         
-        Fitness & Nutrition & Mental & Sleep <--> SharedState[(Redis/Memory Context)]
+        Fitness & Nutrition & Mental & Sleep <--> SharedState[("Redis/Memory Context")]
     end
     
-    API <--> DB[(Supabase Postgres)]
+    API <--> DB[("Supabase Postgres")]
 ```
 
 ---
@@ -143,7 +143,7 @@ wellsync/
 
 ## 🏆 Hackathon Submission
 
-Built by **Team Xombi17**.
+Built by **Team Hackys**.
 *   **Innovation**: bringing Multi-Agent Systems (MAS) to personal wellness.
 *   **Completeness**: Full stack solution (Mobile, Web, Backend, AI).
 *   **Design**: Premium, cohesive aesthetic.
