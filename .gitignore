@@ -158,3 +158,6 @@ agent_workspace/
 
 # Frontend repository
 web/
+
+# WellSync AI repository
+wellsync_flutterapp/
