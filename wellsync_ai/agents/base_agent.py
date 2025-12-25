@@ -129,6 +129,12 @@ class WellnessAgent(Agent, ABC):
             api_key = config.gemini_api_key
         elif config.llm_provider == "groq":
             api_key = config.groq_api_key
+        
+        # Store fallback models for rate limit handling
+        self.fallback_models = config.get_fallback_models()
+        self.current_model_index = 0
+        self._api_key = api_key
+        self._config = config
             
         # Initialize LLM for the agent
         model = LiteLLM(

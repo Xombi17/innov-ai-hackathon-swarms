@@ -29,6 +29,7 @@ from wellsync_ai.api.routes.health import health_bp
 from wellsync_ai.api.routes.wellness import wellness_bp
 from wellsync_ai.api.routes.chat import chat_bp
 from wellsync_ai.api.routes.nutrition import nutrition_bp
+from wellsync_ai.api.routes.feedback import feedback_bp
 
 
 # Configure structured logging
@@ -236,5 +237,6 @@ def create_flask_app() -> Flask:
     app.register_blueprint(wellness_bp)
     app.register_blueprint(chat_bp)
     app.register_blueprint(nutrition_bp)
+    app.register_blueprint(feedback_bp)
     
     return app

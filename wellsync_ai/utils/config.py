@@ -28,8 +28,18 @@ class WellSyncConfig(BaseSettings):
     llm_provider: str = Field("gemini", env="LLM_PROVIDER")
     llm_model: str = Field("gemini/gemini-3-flash-preview", env="LLM_MODEL") 
     
+    # Fallback models for rate limit handling (tried in order)
+    llm_fallback_models: str = Field(
+        "gemini/gemini-2.5-flash,gemini/gemini-2.5-flash-lite,gemini/gemini-1.5-flash",
+        env="LLM_FALLBACK_MODELS"
+    )
+    
+    def get_fallback_models(self) -> list:
+        """Get list of fallback models to try when rate limited."""
+        return [m.strip() for m in self.llm_fallback_models.split(",") if m.strip()]
+    
     # Recommended Model Options (2025):
-    # - Gemini: gemini/gemini-3.0-flash (Fastest), gemini/gemini-3.0-pro (Reasoning)
+    # - Gemini: gemini/gemini-3-flash-preview (Fastest), gemini/gemini-2.5-flash (Reliable)
     # - Groq: groq/llama-3-70b-8192 (Open Source alternative)
     # - OpenAI: gpt-4o (High precision)
     
